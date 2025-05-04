@@ -26,19 +26,6 @@ def display_channel_metrics(channel_stats, video_df):
     with col4:
         st.metric("Total Comments", f"{int(channel_stats['total_comments']):,}")
     
-    # Display average metrics
-    st.subheader("Average Performance Metrics")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Avg. Views per Video", f"{int(channel_stats['avg_views']):,}")
-    with col2:
-        st.metric("Avg. Likes per Video", f"{int(channel_stats['avg_likes']):,}")
-    with col3:
-        st.metric("Avg. Comments per Video", f"{int(channel_stats['avg_comments']):,}")
-    with col4:
-        avg_duration = format_duration(channel_stats['avg_duration_seconds'])
-        st.metric("Avg. Video Duration", avg_duration)
-    
     # Engagement rate calculation
     if channel_stats['avg_views'] > 0:
         engagement_rate = (channel_stats['avg_likes'] + channel_stats['avg_comments']) / channel_stats['avg_views'] * 100
@@ -93,6 +80,144 @@ def display_channel_metrics(channel_stats, video_df):
             height=500
         )
         st.plotly_chart(fig, use_container_width=True)
+        
+        # Add trend forecast
+        show_forecast = st.checkbox("Show Trend Forecast", value=False)
+        
+        if show_forecast and len(time_df) >= 5:  # Need enough data for forecasting
+            import statsmodels.api as sm
+            from statsmodels.tsa.arima.model import ARIMA
+            from pandas.tseries.offsets import DateOffset
+            
+            st.subheader(f"Forecast for Future {trend_metric}")
+            
+            # Resample data to get an evenly spaced time series (needed for ARIMA)
+            forecast_method = st.radio("Forecast Method", ["Linear Regression", "ARIMA Model"])
+            
+            if forecast_method == "Linear Regression":
+                # Simple linear regression for forecasting
+                X = np.array(range(len(time_df))).reshape(-1, 1)
+                y = time_df[y_column].values
+                
+                model = sm.OLS(y, sm.add_constant(X)).fit()
+                
+                # Create future dates for prediction
+                future_periods = 5  # Predict next 5 videos
+                future_X = np.array(range(len(time_df), len(time_df) + future_periods)).reshape(-1, 1)
+                
+                # Predict future values
+                future_y = model.predict(sm.add_constant(future_X))
+                
+                # Create a dataframe for forecasted values
+                last_date = time_df.index[-1]
+                future_dates = [last_date + DateOffset(days=30*i) for i in range(1, future_periods+1)]
+                
+                forecast_df = pd.DataFrame({
+                    'date': future_dates,
+                    y_column: future_y
+                })
+                
+                # Plot original data with forecast
+                combined_df = pd.DataFrame({
+                    'date': time_df.index,
+                    y_column: time_df[y_column],
+                    'type': 'Historical'
+                })
+                
+                forecast_plot_df = pd.DataFrame({
+                    'date': future_dates,
+                    y_column: future_y,
+                    'type': 'Forecast'
+                })
+                
+                plot_df = pd.concat([combined_df, forecast_plot_df])
+                
+                fig = px.scatter(
+                    plot_df,
+                    x='date',
+                    y=y_column,
+                    color='type',
+                    title=f"{trend_metric} Forecast (Next {future_periods} Videos)",
+                    color_discrete_map={
+                        'Historical': 'blue',
+                        'Forecast': 'red'
+                    }
+                )
+                
+                fig.update_layout(
+                    xaxis_title="Date",
+                    yaxis_title=y_axis_title,
+                    height=400
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Show forecast statistics
+                st.write("Forecast Statistics:")
+                for i, (date, value) in enumerate(zip(future_dates, future_y)):
+                    st.write(f"Video {i+1} (est. {date.strftime('%b %Y')}): {int(value):,} {y_axis_title.lower()}")
+                
+            else:  # ARIMA Model
+                try:
+                    # Prepare time series data
+                    ts_data = time_df[y_column].resample('M').mean().fillna(method='ffill')
+                    
+                    # ARIMA model (p,d,q) = (1,1,1) for simplicity
+                    model = ARIMA(ts_data, order=(1,1,1))
+                    model_fit = model.fit()
+                    
+                    # Forecast future periods
+                    future_periods = 5
+                    forecast = model_fit.forecast(steps=future_periods)
+                    
+                    # Create future dates
+                    last_date = ts_data.index[-1]
+                    future_dates = [last_date + DateOffset(months=i) for i in range(1, future_periods+1)]
+                    
+                    # Create forecast dataframe
+                    forecast_df = pd.DataFrame({
+                        'date': future_dates,
+                        y_column: forecast,
+                        'type': 'Forecast'
+                    })
+                    
+                    # Plot historical and forecast data
+                    historical_df = pd.DataFrame({
+                        'date': ts_data.index,
+                        y_column: ts_data.values,
+                        'type': 'Historical'
+                    })
+                    
+                    plot_df = pd.concat([historical_df, forecast_df])
+                    
+                    fig = px.line(
+                        plot_df,
+                        x='date',
+                        y=y_column,
+                        color='type',
+                        title=f"{trend_metric} Forecast (Next {future_periods} Months)",
+                        color_discrete_map={
+                            'Historical': 'blue',
+                            'Forecast': 'red'
+                        }
+                    )
+                    
+                    fig.update_layout(
+                        xaxis_title="Date",
+                        yaxis_title=y_axis_title,
+                        height=400
+                    )
+                    
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    # Show forecast statistics
+                    st.write("Monthly Forecast Statistics:")
+                    for i, (date, value) in enumerate(zip(future_dates, forecast)):
+                        st.write(f"Month {i+1} ({date.strftime('%b %Y')}): {int(value):,} {y_axis_title.lower()}")
+                        
+                except Exception as e:
+                    st.error(f"Could not generate ARIMA forecast: {str(e)}")
+                    st.info("Try using Linear Regression instead, or select a different time period with more data points.")
         
         # Distribution of views
         st.subheader("Video Performance Distribution")

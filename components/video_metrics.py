@@ -63,7 +63,7 @@ def display_video_metrics(video_df):
             col1, col2 = st.columns([1, 3])
             
             with col1:
-                st.image(video["thumbnail"], use_column_width=True)
+                st.image(video["thumbnail"], use_container_width=True)
             
             with col2:
                 st.subheader(video["title"])

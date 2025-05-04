@@ -28,6 +28,37 @@ youtube_api = YouTubeAPI(api_key)
 # MrBeast channel ID
 MR_BEAST_CHANNEL_ID = "UCX6OQ3DkcsbYNE6H8uQQuVA"
 
+# Add dark/light mode toggle in sidebar
+with st.sidebar:
+    st.title("Settings")
+    theme_mode = st.radio("Theme", ["Light", "Dark"])
+    
+    # Apply theme selection 
+    if theme_mode == "Dark":
+        # Apply dark theme
+        st.markdown("""
+        <style>
+        :root {
+            --background-color: #0E1117;
+            --secondary-background-color: #262730;
+            --text-color: #FAFAFA;
+            --font: "Source Sans Pro", sans-serif;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    else:
+        # Apply light theme
+        st.markdown("""
+        <style>
+        :root {
+            --background-color: #FFFFFF;
+            --secondary-background-color: #F0F2F6;
+            --text-color: #262730;
+            --font: "Source Sans Pro", sans-serif;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
 # App title
 st.title("📊 MrBeast Channel Analytics Dashboard")
 
@@ -48,33 +79,66 @@ try:
         st.header(channel_name)
         st.write(f"📈 {subscriber_count:,} subscribers • {video_count:,} videos • {view_count:,} views")
     
-    # Time period filter
+    # Sidebar filters
     st.sidebar.header("Filter Options")
-    time_period = st.sidebar.selectbox(
-        "Time Period",
-        ["Last 7 days", "Last 30 days", "Last 90 days", "Last 365 days"],
-        index=1
-    )
     
-    # Convert time period to days
-    days_map = {
-        "Last 7 days": 7,
-        "Last 30 days": 30,
-        "Last 90 days": 90,
-        "Last 365 days": 365
-    }
-    days = days_map[time_period]
+    # Filter Type
+    filter_type = st.sidebar.radio("Filter Type", ["Preset Periods", "Custom Date Range"])
     
-    # Calculate date range
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days)
+    if filter_type == "Preset Periods":
+        # Time period filter
+        time_period = st.sidebar.selectbox(
+            "Time Period",
+            ["Last 7 days", "Last 30 days", "Last 90 days", "Last 365 days"],
+            index=1
+        )
+        
+        # Convert time period to days
+        days_map = {
+            "Last 7 days": 7,
+            "Last 30 days": 30,
+            "Last 90 days": 90,
+            "Last 365 days": 365
+        }
+        days = days_map[time_period]
+        
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+    else:
+        # Custom date range picker
+        min_date = datetime.now() - timedelta(days=365*2)  # 2 years ago
+        max_date = datetime.now()
+        
+        start_date = st.sidebar.date_input(
+            "Start Date",
+            min_date,
+            min_value=min_date,
+            max_value=max_date
+        )
+        
+        end_date = st.sidebar.date_input(
+            "End Date",
+            max_date,
+            min_value=start_date,
+            max_value=max_date
+        )
+        
+        # Convert to datetime for API
+        start_date = datetime.combine(start_date, datetime.min.time())
+        end_date = datetime.combine(end_date, datetime.max.time())
+    
+    # Format for YouTube API
     published_after = start_date.isoformat("T") + "Z"
     
     # Get videos based on time period
     videos = youtube_api.get_channel_videos(MR_BEAST_CHANNEL_ID, published_after=published_after)
     
     if not videos["items"]:
-        st.warning(f"No videos found in the selected time period ({time_period})")
+        if filter_type == "Preset Periods":
+            st.warning(f"No videos found in the selected time period ({time_period})")
+        else:
+            st.warning(f"No videos found between {start_date.strftime('%b %d, %Y')} and {end_date.strftime('%b %d, %Y')}")
     else:
         # Process data
         video_ids = [item["id"]["videoId"] for item in videos["items"]]
