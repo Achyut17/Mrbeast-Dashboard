@@ -31,32 +31,87 @@ MR_BEAST_CHANNEL_ID = "UCX6OQ3DkcsbYNE6H8uQQuVA"
 # Add dark/light mode toggle in sidebar
 with st.sidebar:
     st.title("Settings")
+    
+    # Dark/Light mode toggle
     theme_mode = st.radio("Theme", ["Light", "Dark"])
     
-    # Apply theme selection 
+    # Apply theme selection using custom CSS
     if theme_mode == "Dark":
         # Apply dark theme
         st.markdown("""
-        <style>
-        :root {
-            --background-color: #0E1117;
-            --secondary-background-color: #262730;
-            --text-color: #FAFAFA;
-            --font: "Source Sans Pro", sans-serif;
-        }
-        </style>
+            <style>
+                .stApp {
+                    background-color: #0E1117;
+                    color: #FAFAFA;
+                }
+                .stTabs [data-baseweb="tab-list"] {
+                    background-color: #262730;
+                }
+                .stTabs [data-baseweb="tab"] {
+                    color: #FAFAFA;
+                }
+                div[data-testid="stSidebar"] {
+                    background-color: #262730;
+                    color: #FAFAFA;
+                }
+                .stRadio label, .stCheckbox label {
+                    color: #FAFAFA !important;
+                }
+                div.stSelectbox label {
+                    color: #FAFAFA !important;
+                }
+                div.stSelectbox div[data-baseweb="select"] {
+                    background-color: #262730;
+                }
+                .streamlit-expanderHeader {
+                    color: #FAFAFA !important;
+                }
+                button[kind="secondary"] {
+                    background-color: #262730;
+                    color: #FAFAFA;
+                }
+                .stDateInput > div {
+                    color: #FAFAFA;
+                }
+                .css-ch5dnh {
+                    color: #FAFAFA !important;
+                }
+                .css-1d0aukl {
+                    color: #FAFAFA !important;
+                }
+            </style>
         """, unsafe_allow_html=True)
     else:
-        # Apply light theme
+        # Reset to light theme (default)
         st.markdown("""
-        <style>
-        :root {
-            --background-color: #FFFFFF;
-            --secondary-background-color: #F0F2F6;
-            --text-color: #262730;
-            --font: "Source Sans Pro", sans-serif;
-        }
-        </style>
+            <style>
+                .stApp {
+                    background-color: #FFFFFF;
+                    color: #262730;
+                }
+                .stTabs [data-baseweb="tab-list"] {
+                    background-color: #F0F2F6;
+                }
+                .stTabs [data-baseweb="tab"] {
+                    color: #262730;
+                }
+                div[data-testid="stSidebar"] {
+                    background-color: #F0F2F6;
+                }
+                .stRadio label, .stCheckbox label {
+                    color: #262730 !important;
+                }
+                div.stSelectbox label {
+                    color: #262730 !important;
+                }
+                .streamlit-expanderHeader {
+                    color: #262730 !important;
+                }
+                button[kind="secondary"] {
+                    background-color: #F0F2F6;
+                    color: #262730;
+                }
+            </style>
         """, unsafe_allow_html=True)
 
 # App title
