@@ -18,7 +18,7 @@ st.set_page_config(
 )
 
 # Initialize YouTube API
-api_key = os.getenv("YOUTUBE_API_KEY", "")
+api_key = st.secrets["YOUTUBE_API_KEY"]
 if not api_key:
     st.error("YouTube API key not found. Please set the YOUTUBE_API_KEY environment variable.")
     st.stop()
