@@ -120,7 +120,7 @@ st.title("📊 MrBeast Channel Analytics Dashboard")
 # Get channel info
 try:
     channel_info = youtube_api.get_channel_info(MR_BEAST_CHANNEL_ID)
-     channel_name = channel_info["items"][0]["snippet"]["title"]
+    channel_name = channel_info["items"][0]["snippet"]["title"]
     channel_thumbnail = channel_info["items"][0]["snippet"]["thumbnails"]["default"]["url"]
     subscriber_count = int(channel_info["items"][0]["statistics"]["subscriberCount"])
     view_count = int(channel_info["items"][0]["statistics"]["viewCount"])
